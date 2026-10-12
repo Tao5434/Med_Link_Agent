@@ -1,0 +1,1884 @@
+（由 需求分析.pdf 提取的正文文本，供开发对照使用）
+
+========== PAGE 1 (obj 2) ==========
+项目
+
+内容
+
+文档名称
+
+软件需求规格说明书（Software Requirements Specification）
+
+产品名称
+
+诊小通 Agent
+
+系统版本
+
+v2.1.0
+
+文档版本
+
+V1.0
+
+编制日期
+
+2026-05-19
+
+术语
+
+说明
+
+Agent
+
+智能体，本项目指承担特定任务（路由、检索、推理、安全审查）的模
+
+型/规则单元
+
+RouterAgent
+
+路由 Agent，识别业务场景
+
+ContextAgent
+
+上下文 Agent，整理患者信息、历史对话和症状线索
+
+诊小通 Agent 需求说明书
+
+ 
+
+ 
+
+1. 引言
+
+ 
+
+1.1 编写目的
+
+ 
+
+本文档面向"诊小通 Agent"互联网医院智能服务平台，完整描述系统的
+
+业务背景、功能需
+
+求、非功能需求、数据需求与外部接口需求
+
+，作为开发、测试与验收的统一依
+
+据。
+
+ 
+
+1.2 项目背景
+
+ 
+
+诊小通 Agent 是一个面向
+
+互联网医院、线上健康咨询、医疗服务平台、大模
+
+型应用开发学习
+
+场景的企业级医疗智能助手项目。系统围绕"
+
+分诊、问诊、用药、报
+
+告、记录、挂号
+
+"六类高频医疗服务流程构建完整业务闭环，采用 
+
+Vue3 + FastAPI 前
+
+后端分离
+
+架构，把多 Agent 协作、RAG 知识库、联网增强、会话记忆、报告解读和预约挂号整合到
+
+一个系统中。
+
+ 
+
+1.3 名词术语与缩写
+
+========== PAGE 2 (obj 13) ==========
+术语
+
+说明
+
+RAGAgent
+
+检索增强 Agent，召回本地知识库证据
+
+ResearchAgent
+
+联网研究 Agent，通过 联网补充时效性证据
+
+ReasoningAgent
+
+推理 Agent，调用大模型完成结构化医学推理
+
+FormatterAgent
+
+格式化 Agent，在模型输出非法 JSON 时进行修复
+
+SafetyAgent
+
+安全审查 Agent，执行医疗合规与非诊断化检查
+
+RAG
+
+Retrieval-Augmented Generation，检索增强生成
+
+红旗信号（Red
+
+Flag）
+
+提示需要立即线下就医或急诊的高危症状
+
+主诉
+
+患者描述的核心症状与不适
+
+号源
+
+医生某个时间段可预约的名额
+
+LLM
+
+Large Language Model，大语言模型
+
+编
+
+号
+
+功能模块
+
+说明
+
+M1
+
+智能分诊台
+
+输入症状+患者信息，输出推荐科室、风险等级、分诊依据、证据与
+
+Agent 链路
+
+M2
+
+线上问诊
+
+聊天式连续对话，带短期记忆 + RAG + 联网证据
+
+M3
+
+用药咨询
+
+面向药物相互作用、禁忌、特殊人群、就医边界的药学咨询
+
+M4
+
+问诊记录
+
+查看近 7 天/30 天/半年内的分诊、问诊、用药记录，卡片+弹窗详情
+
+M5
+
+报告查询
+
+展示检验/检查报告指标明细，支持 AI 解读异常原因与就医建议
+
+M6
+
+预约挂号
+
+按科室查看未来 7 天上午/下午排班号源，可预约、可取消
+
+M7
+
+系统设置
+
+展示模型/联网状态，提供一键清空全部数据
+
+ 
+
+2. 总体描述
+
+ 
+
+2.1 产品定位与前景
+
+ 
+
+诊小通 Agent 定位于"
+
+从症状输入到挂号建议的完整医疗服务闭环
+
+"，是一个企业
+
+级医疗 AI 应用。包含前端工作台、后端服务、数据持久化、知识库、模型调用与安全合规的完整工程。
+
+2.2 产品功能概览
+
+ 
+
+系统包含 
+
+7 个前端功能入口
+
+ 与 
+
+1 条核心多 Agent 推理链路
+
+：
+
+========== PAGE 3 (obj 18) ==========
+编
+
+号
+
+功能模块
+
+说明
+
+C1
+
+多 Agent 推理链
+
+路
+
+Router → Context → RAG → Research → Reasoning → Safety 的
+
+核心编排
+
+项
+
+要求
+
+操作系统
+
+Windows 10/11（推荐）、Linux、macOS
+
+后端运行时
+
+Python 3.11+（推荐 3.11）
+
+前端运行时
+
+Node.js 18+、npm 9+
+
+数据库
+
+mysql 或者 sqlite
+
+向量数据库
+
+chroma 或在 milvus
+
+ 
+
+2.3 运行环境
+
+ 
+
+2.4 设计与实现约束
+
+ 
+
+. 
+
+前后端分离
+
+：前端 Vue3 + Vite，后端 FastAPI，通过 HTTP/JSON 通信。
+
+. 
+
+模型调用采用 OpenAI 兼容协议
+
+，
+
+base_url
+
+ 与 
+
+api_key
+
+ 可配置。
+
+. 
+
+默认不强制依赖真实大模型
+
+：大模型不能使用系统以降级模式（本地规则 + RAG 兜
+
+底）运行，保证无 Key 也能使用。
+
+. 
+
+医疗合规硬约束
+
+：不得确诊、不得开处方、不得给具体处方剂量、不得绝对化表达。
+
+. 
+
+知识库为本地 Markdown
+
+，采用轻量关键词倒排/余弦相似度检索。
+
+ 
+
+3. 功能需求
+
+ 
+
+3.1 智能分诊（FR-TRIAGE）
+
+ 
+
+描述
+
+：用户填写患者基础信息与症状主诉，系统输出推荐挂号科室、风险等级、分诊结论与依
+
+据。
+
+输入
+
+：
+
+message
+
+（症状主诉，必填）、
+
+patient_context
+
+（年龄、性别、既往病史、
+
+过敏史、用药史，可选）、
+
+enable_deep_search
+
+。
+
+处理逻辑与业务规则
+
+：
+
+. 
+
+RouterAgent 将场景识别为"智能分诊"；
+
+========== PAGE 4 (obj 26) ==========
+. 
+
+ContextAgent 整理患者信息与历史对话，调用本地症状分析/风险评估作为
+
+参考线索
+
+（不
+
+得直接作为最终结论）；
+
+. 
+
+RAGAgent 检索本地知识库（
+
+top_k
+
+，默认取 6 条），ResearchAgent 联网检索（默认 3
+
+ 
+
+条）；二者并行执行；
+
+. 
+
+ReasoningAgent 结合患者信息+RAG+联网证据进行推理，输出结构化 JSON（推荐科室、风
+
+险等级、结论、依据、红旗信号、建议追问、健康建议）；
+
+. 
+
+SafetyAgent 做合规检查并追加免责声明；
+
+. 
+
+recommended_department
+
+ 必须从系统科室列表中选取（前端以醒目渐变卡片展
+
+示）。
+
+输出
+
+：
+
+ChatResponse
+
+（含 
+
+recommended_department
+
+、
+
+risk_level
+
+、
+
+answer
+
+、
+
+evidence
+
+、
+
+metrics
+
+、
+
+disclaimer
+
+）。
+
+ 
+
+字段
+
+中
+
+文
+
+名
+
+称
+
+含义说明
+
+recommended_department
+
+建
+
+议
+
+归
+
+某
+
+部
+
+门
+
+判定该问题 / 工单应该交给哪个部门
+
+处理，字符串。例：
+
+消化科
+
+、
+
+内
+
+科
+
+、
+
+精神科
+
+risk_level
+
+风
+
+险
+
+等
+
+级
+
+风险定级，枚举值，常用：
+
+low
+
+/
+
+medium
+
+/
+
+high
+
+，也可以
+
+中文
+
+低
+
+/
+
+中
+
+/
+
+高
+
+answer
+
+最
+
+终
+
+答
+
+复
+
+面向用户的
+
+对外可读答案
+
+，精
+
+炼、合规，最终返回给前端
+
+evidence
+
+证
+
+据
+
+依
+
+据
+
+支撑结论的参考材料、原文片段、引
+
+用文档 ID、检索来源列表；数组 / 字
+
+符串
+
+thinking_steps
+
+推
+
+理
+
+步
+
+骤
+
+模型内部思考过程，
+
+对内
+
+，不直接
+
+展示给用户；分步推理逻辑
+
+metrics
+
+指
+
+标
+
+本次推理的量化指标，JSON 对象。
+
+如召回条数、耗时、置信度、工具调
+
+用次数
+
+========== PAGE 5 (obj 30) ==========
+字段
+
+中
+
+文
+
+名
+
+称
+
+含义说明
+
+disclaimer
+
+免
+
+责
+
+声
+
+明
+
+固定 / 动态生成的合规提示文本，放
+
+在答案末尾
+
+异常与降级
+
+：模型不可用/输出不可解析 → 使用 
+
+fallback_structured
+
+ 降级结果
+
+（风险等级沿用本地评估），并在 
+
+thinking_steps
+
+ 中标注降级。
+
+ 
+
+3.2 线上问诊（FR-CONSULT）
+
+ 
+
+描述
+
+：聊天式连续问诊，保留上下文记忆，支持"刚才说的症状挂什么科""能不能先吃药观察"等追
+
+问。
+
+输入
+
+：
+
+message
+
+、
+
+session_id
+
+（可选，用于连续会话）、
+
+patient_context
+
+。
+
+处理逻辑与业务规则
+
+：
+
+. 
+
+未传 
+
+session_id
+
+ 时生成 UUID，并 
+
+upsert_session
+
+（标题取消息前 30 字）;
+
+. 
+
+写入用户消息，读取最近 12 条历史作为上下文（
+
+build_search_query
+
+ 使用最近 4
+
+ 
+
+条）；
+
+. 
+
+走与分诊相同的 RAG + 联网 + 推理链路，场景为"线上问诊"；
+
+. 
+
+写入助手回答，并落库一条 
+
+encounter
+
+ 问诊记录。
+
+输出
+
+：同 
+
+ChatResponse
+
+。
+
+异常与降级
+
+：与分诊一致；前端将失败信息以助手气泡呈现。
+
+ 
+
+3.3 用药咨询（FR-MEDICATION）
+
+ 
+
+描述
+
+：围绕药物相互作用、重复用药、禁忌/慎用人群、特殊人群与就医边界提供参考。
+
+输入
+
+：
+
+message
+
+（药品/症状/剂量/合并用药/特殊人群信息）、
+
+patient_context
+
+。
+
+处理逻辑与业务规则
+
+：
+
+. 
+
+场景识别为"用药咨询"，System Prompt 切换为药学角色；
+
+. 
+
+recommended_department
+
+ 默认归一化为"药学门诊"；
+
+. 
+
+检索查询词偏重"用药安全/药物相互作用/禁忌/特殊人群"；
+
+. 
+
+不得给具体处方剂量。
+
+输出
+
+：同 
+
+ChatResponse
+
+（前端"建议咨询科室"横幅）。
+
+========== PAGE 6 (obj 34) ==========
+异常与降级
+
+：同分诊。
+
+ 
+
+3.4 报告查询与 AI 解读（FR-REPORT）
+
+ 
+
+描述
+
+：展示模拟检验/检查报告列表与指标明细，支持 AI 解读异常指标。
+
+输入
+
+：报告列表 
+
+GET /api/reports
+
+；解读 
+
+GET
+
+ 
+
+/api/reports/{report_id}/interpret
+
+。
+
+业务规则
+
+：
+
+. 
+
+报告为
+
+每个用户内置3份数据
+
+（3 份：血常规、胸部 CT、肝肾功能）；
+
+. 
+
+解读时若大模型启用则调用模型给出科普解释与就医建议，否则使用 
+
+report_fallback
+
+ 规则兜底；
+
+. 
+
+返回的解读文本经 
+
+compliance_guard
+
+ 合规处理；
+
+. 
+
+异常项判定依据 
+
+items[].flag != "
+
+正常
+
+"
+
+；有异常判为中风险，否则低风险。
+
+输出
+
+：
+
+{id, department, risk_level, analysis,
+
+ 
+
+interpretation}
+
+。
+
+ 
+
+3.5 问诊记录（FR-RECORD）
+
+ 
+
+描述
+
+：查询近 7/30/180 天的分诊、问诊、用药记录。
+
+输入
+
+：
+
+user_id
+
+、
+
+days
+
+（1~365，默认 7）。
+
+业务规则
+
+：读取 
+
+encounters
+
+ 表，按创建时间倒序；前端卡片列表 + 弹窗展示完整摘
+
+要。
+
+输出
+
+：
+
+{records: [...]}
+
+。
+
+ 
+
+3.6 预约挂号（FR-APPOINTMENT）
+
+ 
+
+描述
+
+：按科室展示未来 7 天上午/下午排班号源，支持预约与取消。
+
+输入
+
+：
+
+科室列表 
+
+GET /api/departments
+
+；
+
+排班 
+
+GET /api/appointments/schedule?department=
+
+呼吸科
+
+；
+
+创建预约 
+
+POST /api/appointments
+
+（参数含 
+
+department/doctor/visit_date/period/time_slot/remaining
+
+ 
+
+等）；
+
+========== PAGE 7 (obj 39) ==========
+取消预约 
+
+DELETE /api/appointments/{id}
+
+。
+
+业务规则
+
+：
+
+. 
+
+排班由 
+
+schedule_for_department
+
+ 
+
+伪随机生成
+
+（以科室名做随机种子，保
+
+证同科室结果稳定可复现），生成未来 7 天 × 上午/下午，含医生、职称、时间段、总号源 
+
+quota
+
+、剩余 
+
+remaining
+
+（= 总数− 已预约数）；
+
+. 
+
+剩余号源由已预约记录实时扣减；
+
+. 
+
+POST
+
+ 时若 
+
+remaining <= 0
+
+ 返回 400「当前号源已约满」；
+
+. 
+
+add_appointment
+
+ 对相同（科室+医生+日期+时段）的"已预约"记录做去重，重复提交
+
+返回既有 ID（幂等）；
+
+. 
+
+取消仅对 
+
+status='
+
+已预约
+
+'
+
+ 的记录生效。
+
+输出
+
+：预约列表 
+
+{appointments:[...]}
+
+、创建结果 
+
+{ok, appointment_id,
+
+ 
+
+appointments}
+
+。
+
+优先级
+
+：这个拓展实现，经过意图识别，收集用户信息，帮用户做预约。
+
+3.7 系统设置与数据管理（FR-SETTINGS）
+
+ 
+
+描述
+
+：展示远程模型状态、API 地址、联网检索状态；提供"一键清空全部数据"。
+
+输入
+
+：
+
+GET /api/settings
+
+；
+
+DELETE /api/sessions
+
+。
+
+业务规则
+
+：
+
+. 
+
+llm_enabled
+
+ = 
+
+enable_llm
+
+ 为真 
+
+且
+
+ 
+
+api_key
+
+ 非空；
+
+. 
+
+页面
+
+不展示 API Key 明文
+
+，仅展示是否已配置；
+
+. 
+
+清空操作删除 
+
+sessions
+
+、
+
+messages
+
+、
+
+encounters
+
+、
+
+appointments
+
+ 四
+
+张表全部数据。
+
+输出
+
+：
+
+{llm_enabled, base_url, model_name,
+
+ 
+
+api_key_configured, deep_search_enabled, rag_top_k}
+
+、
+
+{ok:
+
+ 
+
+true}
+
+。
+
+ 
+
+3.8 多 Agent 编排链路
+
+ 
+
+描述
+
+：一次请求的完整编排，前端可视化展示思考过程与证据。
+
+链路
+
+：
+
+========== PAGE 8 (obj 43) ==========
+业务规则
+
+：
+
+. 
+
+Agent 调用以 
+
+AgentTrace(agent, action, detail, duration_ms)
+
+ 
+
+记录，同时生成人类可读的 
+
+thinking_steps
+
+；
+
+. 
+
+模型调用支持重试（
+
+max_retries
+
+，1~3 次，退避 0.8s 递增）；
+
+. 
+
+结构化输出失败时的降级顺序：
+
+JSON 
+
+解析
+
+ → 
+
+叙事解析
+
+ → JSON 
+
+修复
+
+ → 
+
+叙事重
+
+试
+
+ → 
+
+规则兜底
+
+。
+
+ 
+
+3.9 RAG 本地知识库检索（FR-RAG）
+
+ 
+
+描述
+
+：对本地 Markdown 知识库做轻量检索，返回可引用证据。
+
+业务规则
+
+：
+
+. 
+
+载入 
+
+data/knowledge_base/*.md
+
+，并进行切块；
+
+. 
+
+用余弦相似度打分，返回 
+
+top_k
+
+（默认 5；分诊/问诊链路请求 6 条）条 
+
+Evidence(source, title, score, content)
+
+。
+
+ 
+
+3.10 联网增强（FR-DEEPSEARCH）
+
+ 
+
+描述
+
+：在开启联网时检索公开医学资料，与本地证据合并。
+
+业务规则
+
+：
+
+. 
+
+仍失败则返回一条降级证据，提示"将基于本地知识库与安全规则回答"；
+
+. 
+
+联网资料
+
+仅作参考
+
+，回答仍保留免责声明。
+
+ 
+
+3.11 医疗安全合规（FR-SAFETY）
+
+ 
+
+描述
+
+：对最终回答执行合规处理。
+
+业务规则（
+
+compliance_guard
+
+）
+
+：
+
+RouterAgent → 场景路由（分诊 / 问诊 / 用药）
+
+ContextAgent → 患者上下文 + 历史对话 + 本地症状线索
+
+RAGAgent → 本地知识库召回（并发）
+
+ResearchAgent→ 联网 DeepResearch（并发）
+
+ReasoningAgent→ 大模型结构化推理（JSON / 叙事 / 修复 / 重试）
+
+FormatterAgent→ 输出非法 JSON 时结构化修复（条件触发）
+
+SafetyAgent → 合规检查 + 免责声明
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+惠姐
+
+========== PAGE 9 (obj 55) ==========
+方法
+
+路径
+
+说明
+
+GET
+
+/api/health
+
+健康检查
+
+POST
+
+/api/chat
+
+通用问诊（走
+
+consultation 场景）
+
+POST
+
+/api/triage
+
+智能分诊
+
+POST
+
+/api/consultation
+
+线上问诊
+
+POST
+
+/api/medication
+
+用药咨询
+
+GET
+
+/api/sessions
+
+会话列表
+
+GET
+
+/api/sessions/{session_id}/messages
+
+会话消息（最多 100
+
+条）
+
+DELETE
+
+/api/sessions/{session_id}
+
+删除指定会话
+
+DELETE
+
+/api/sessions
+
+清空全部数据
+
+GET
+
+/api/records
+
+问诊记录
+
+（
+
+user_id
+
+、
+
+days
+
+）
+
+GET
+
+/api/reports
+
+报告列表
+
+GET
+
+/api/reports/{report_id}/interpret
+
+报告 AI 解读
+
+GET
+
+/api/departments
+
+科室列表
+
+. 
+
+替换绝对化/诊断性表达：
+
+确诊为
+
+→
+
+需要由医生评估是否为
+
+、
+
+一定是
+
+→
+
+可能为
+
+、
+
+必须
+
+服用
+
+→
+
+是否用药需要医生评估
+
+、
+
+剂量是
+
+→
+
+具体剂量需要遵医嘱
+
+；
+
+. 
+
+追加免责声明（若缺失）："以上内容仅用于健康科普和就医参考，不能替代医生诊断、处方
+
+或治疗。"
+
+ 
+
+ 
+
+4. 外部接口需求
+
+ 
+
+4.1 用户界面
+
+ 
+
+Web 单页工作台（Vue2 + ElementUI），左侧固定导航 + 主内容区，包含：护士助手欢迎区、三张统计
+
+卡片、各功能面板、结果面板、Agent 链路面板、证据面板、弹窗详情。视觉为互联网医院风格（浅
+
+色、卡片、渐变科室横幅）。
+
+4.2 软件接口（HTTP API 清单）
+
+ 
+
+Base URL：
+
+http://127.0.0.1:8012
+
+========== PAGE 10 (obj 60) ==========
+方法
+
+路径
+
+说明
+
+GET
+
+/api/appointments/schedule
+
+科室排班
+
+（
+
+department
+
+、
+
+user_id
+
+）
+
+POST
+
+/api/appointments
+
+创建预约
+
+GET
+
+/api/appointments
+
+我的预约
+
+DELETE
+
+/api/appointments/{appointment_id}
+
+取消预约
+
+GET
+
+/api/metrics
+
+平台指标
+
+GET
+
+/api/settings
+
+系统设置状态
+
+字段
+
+类型
+
+说明
+
+id
+
+TEXT PK
+
+会话 ID（UUID）
+
+title
+
+TEXT
+
+标题（取首条消息前 30 字）
+
+created_at
+
+TEXT
+
+创建时间
+
+updated_at
+
+TEXT
+
+更新时间
+
+字段
+
+类型
+
+说明
+
+id
+
+INTEGER PK
+
+自增
+
+session_id
+
+TEXT
+
+会话 ID
+
+role
+
+TEXT
+
+user/assistant
+
+content
+
+TEXT
+
+内容
+
+metadata
+
+TEXT
+
+JSON（场景、风险、科室、trace 等）
+
+created_at
+
+TEXT
+
+时间
+
+ 
+
+5. 数据需求
+
+ 
+
+6.1 数据模型
+
+ 
+
+sessions（会话）
+
+messages（消息）
+
+health_profiles（健康档案）
+
+========== PAGE 11 (obj 64) ==========
+字段
+
+类型
+
+说明
+
+user_id
+
+TEXT
+
+PK
+
+用户 ID
+
+age / gender / chronic_diseases / allergy_history /
+
+medication_history
+
+-
+
+基础健康信
+
+息
+
+updated_at
+
+TEXT
+
+更新时间
+
+字段
+
+类型
+
+说明
+
+id
+
+INTEGER PK
+
+自增
+
+session_id / user_id
+
+TEXT
+
+会话/用户
+
+scene
+
+TEXT
+
+triage/consultation/medication
+
+chief_complaint
+
+TEXT
+
+主诉
+
+risk_level
+
+TEXT
+
+风险等级
+
+department
+
+TEXT
+
+推荐科室
+
+summary
+
+TEXT
+
+回答摘要
+
+metadata
+
+TEXT
+
+JSON
+
+created_at
+
+TEXT
+
+时间
+
+字段
+
+类型
+
+说明
+
+id
+
+INTEGER PK
+
+自增（展示为 
+
+YL
+
+ + 6 位）
+
+user_id / department / doctor / doctor_title
+
+-
+
+预约信息
+
+visit_date / period / time_slot
+
+TEXT
+
+就诊日期/上午下午/时间段
+
+status
+
+TEXT
+
+已预约/已取消
+
+created_at
+
+TEXT
+
+时间
+
+ 
+
+encounters（问诊记录）
+
+appointments（预约）
+
+6.2 知识库数据
+
+ 
+
+提供10 篇 Markdown，覆盖：发热与感染、高血压、糖尿病、胸痛呼吸困难急症、胃肠道症状、医疗合
+
+规边界、妇科月经异常、腰痛鉴别、感冒药与止痛药安全、腹泻腹痛。
+
+========== PAGE 12 (obj 67) ==========
+编号
+
+验收项
+
+通过标准
+
+AC-1
+
+后端启
+
+动
+
+GET /api/health
+
+ 返回 
+
+{"status":"ok"}
+
+AC-2
+
+前端启
+
+动
+
+http://127.0.0.1:5178
+
+ 正常打开工作台
+
+AC-3
+
+分诊闭
+
+环
+
+输入"发热两天、咳嗽有黄痰、体温 38.7℃"能返回推荐科室、风险等级、证
+
+据与 Agent 链路
+
+AC-4
+
+问诊记
+
+忆
+
+同一会话内追问可结合上文作答
+
+AC-5
+
+用药咨
+
+询
+
+询问"布洛芬和感冒灵能一起吃吗"返回用药安全参考且无处方剂量
+
+AC-6
+
+报告解
+
+读
+
+选择报告可返回异常指标科普解释与就医建议
+
+AC-7
+
+预约挂
+
+号
+
+可选科室、查看 7 天号源、成功预约并取消
+
+AC-8
+
+记录查
+
+询
+
+近 7/30/180 天记录可查，弹窗显示完整摘要
+
+AC-9
+
+合规
+
+所有回答均含免责声明且无确诊/处方表述
+
+AC-
+
+10
+
+降级
+
+关闭 LLM 后系统仍能返回降级科普结果
+
+6.3 数据规模约束
+
+ 
+
+会话消息读取上限：默认 20 条，接口按 100 条；
+
+上下文记忆：推理取最近 12 条，Prompt 取最近 4~8 条；
+
+证据上限：返回最多 8 条。
+
+6. 约束、假设与验收标准
+
+ 
+
+7.1 约束
+
+ 
+
+必须可"无 API Key"降级运行；
+
+必须满足医疗合规红线；
+
+ 
+
+7.2 验收标准
+
+========== PAGE 13 (obj 73) ==========
+等级
+
+含义
+
+行动建议
+
+低风险
+
+未识别明确高危信号
+
+健康观察 + 生活方式调整，症状加重应就医
+
+中风险
+
+含持续/需观察症状
+
+记录变化，必要时门诊
+
+高风险
+
+含高危红旗症状
+
+立即线下就医/急诊/急救
+
+附录 A：核心科室列表
+
+ 
+
+消化科、妇产科、皮肤科、内分泌科、神经内科、骨科、外科、内科、男科、生殖医学科、眼科、肾脏
+
+病中心、泌尿外科、呼吸科、药学门诊。
+
+附录 B：风险等级定义

@@ -1,0 +1,28 @@
+# 诊小通 Agent 后端依赖（Python 3.11+）
+# 安装：pip install -r requirements.txt
+
+# ---- Web 框架 ----
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+python-dotenv>=1.0.0
+python-multipart>=0.0.9
+
+# ---- 数据库 ----
+PyMySQL>=1.1.0
+
+# ---- 多 Agent 编排 ----
+langgraph>=0.2.0
+langchain-core>=0.3.0
+
+# ---- 向量检索（可选，RAG_BACKEND=chroma 时需要） ----
+chromadb>=0.4.22
+llama-index-core>=0.10.0
+llama-index-vector-stores-chroma>=0.1.0
+llama-index-embeddings-ollama>=0.1.0
+
+# ---- 大模型（OpenAI 兼容协议客户端） ----
+openai>=1.10.0
+
+# ---- 联网增强 ----
+requests>=2.31.0
